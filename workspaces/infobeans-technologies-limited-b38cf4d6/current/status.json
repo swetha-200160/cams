@@ -1,0 +1,22 @@
+{
+  "application_id": "infobeans-technologies-limited-b38cf4d6",
+  "company_name": "Infobeans Technologies Limited",
+  "status": "created",
+  "current_stage": null,
+  "started_at": null,
+  "completed_at": null,
+  "last_updated_at": "2026-04-29T09:02:24.234096Z",
+  "workspace_dir": "/app/workspaces/infobeans-technologies-limited-b38cf4d6/current",
+  "stages": [],
+  "artifacts": {
+    "transformation_output": null,
+    "enrichment_output": null,
+    "analysis_output": null,
+    "cam_draft_output": null,
+    "cam_markdown_output": null,
+    "cam_docx_output": null,
+    "cam_pdf_output": null
+  },
+  "errors": [],
+  "draft_available": false
+}

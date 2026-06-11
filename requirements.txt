@@ -1,0 +1,24 @@
+fastapi
+psycopg2-binary
+google-genai>=1.0.0
+uvicorn
+python-docx
+openpyxl
+pypdf
+pydantic
+python-multipart
+python-dotenv
+groq
+reportlab
+Pillow
+docling
+
+# Agent 2 — Web Scraper dependencies
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+beautifulsoup4>=4.12.0
+lxml>=5.2.0
+httpx>=0.27.0
+playwright>=1.44.0
+diskcache>=5.6.0

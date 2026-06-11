@@ -1,0 +1,22 @@
+# Web Scraper Agent — requirements
+# Install: pip install -r requirements.txt
+
+# ── LangGraph / LangChain ─────────────────────────────────────────────────────
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+
+# ── HTTP / Scraping ───────────────────────────────────────────────────────────
+httpx>=0.27.0              # async HTTP client (replaces requests)
+beautifulsoup4>=4.12.0     # HTML parsing
+lxml>=5.2.0                # fast BS4 parser backend
+playwright>=1.44.0         # JS-rendered pages (install browsers: playwright install chromium)
+
+# ── Data validation ───────────────────────────────────────────────────────────
+pydantic>=2.7.0            # schema validation (v2 only)
+
+# ── Caching ───────────────────────────────────────────────────────────────────
+diskcache>=5.6.0           # file-based TTL cache (no Redis needed)
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0       # .env loading (for future API keys)

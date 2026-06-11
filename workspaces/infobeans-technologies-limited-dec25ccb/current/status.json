@@ -1,0 +1,22 @@
+{
+  "application_id": "infobeans-technologies-limited-dec25ccb",
+  "company_name": "Infobeans Technologies Limited",
+  "status": "created",
+  "current_stage": null,
+  "started_at": null,
+  "completed_at": null,
+  "last_updated_at": "2026-04-22T09:08:03.235835Z",
+  "workspace_dir": "C:\\Users\\abdula\\Downloads\\CAMS\\integrated_cam_backend\\workspaces\\infobeans-technologies-limited-dec25ccb\\current",
+  "stages": [],
+  "artifacts": {
+    "transformation_output": null,
+    "enrichment_output": null,
+    "analysis_output": null,
+    "cam_draft_output": null,
+    "cam_markdown_output": null,
+    "cam_docx_output": null,
+    "cam_pdf_output": null
+  },
+  "errors": [],
+  "draft_available": false
+}

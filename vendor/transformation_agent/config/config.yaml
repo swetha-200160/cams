@@ -1,0 +1,924 @@
+# ══════════════════════════════════════════════════════════════
+# Transformation Agent — Central Configuration
+# ══════════════════════════════════════════════════════════════
+# All runtime constants live here. No hardcoded values in source files.
+# Edit this file to adjust behaviour without touching Python code.
+
+# ── LLM ───────────────────────────────────────────────────────
+llm:
+  model: "llama-3.1-8b-instant"
+  max_prompt_chars: 4000
+
+# ── File Paths ────────────────────────────────────────────────
+paths:
+  input_folder: "input_docs"
+  output_folder: "output"
+  output_file: "output/transformation_output.json"
+
+# ── File Handling ─────────────────────────────────────────────
+file_handling:
+  supported_extensions:
+    - ".pdf"
+    - ".xlsx"
+    - ".xls"
+    - ".csv"
+    - ".docx"
+    - ".doc"
+    - ".txt"
+    - ".png"
+    - ".jpg"
+    - ".jpeg"
+    - ".bmp"
+    - ".tiff"
+  min_table_rows: 2          # Tables with fewer rows are discarded
+  table_type_min_hits: 2     # Min anchor keyword hits to assign a table type
+
+# ── Pipeline Tabs ─────────────────────────────────────────────
+pipeline:
+  tabs:
+    - "overview"
+    - "balance_sheet"
+    - "income_statement"
+    - "cash_flow"
+
+# ── Character / Token Limits ──────────────────────────────────
+limits:
+  max_prompt_chars: 4000
+  cleaning_max_table_chars: 6000    # Budget for serialized table data in cleaning prompt
+  cleaning_max_text_chars: 4000     # Budget for text sections in cleaning prompt
+  cleaning_header_chars: 400        # Chars reserved for document header (company name)
+  cleaning_cf_chars: 2000           # Chars reserved for cash flow section
+  structuring_max_cleaned_chars: 4000   # Budget for cleaned_data JSON in structuring prompt
+  structuring_max_table_chars: 10000    # Budget for raw table rows in structuring prompt
+  max_sane_value: 1.0e+12           # Max plausible financial value (1 trillion); above = corrupt
+
+# ── Financial Field Names per Tab ────────────────────────────
+# These define which schema fields belong to each financial tab.
+financial_fields:
+  balance_sheet:
+    - share_capital
+    - reserves_surplus
+    - long_term_borrowing
+    - short_term_borrowing
+    - trade_payables
+    - fixed_assets
+  income_statement:
+    - revenue_from_operations
+    - other_income
+    - cost_of_material
+    - employee_benefit_expense
+    - finance_cost
+    - depreciation
+  cash_flow:
+    - operating_activities
+    - investing_activities
+    - financing_activities
+    - net_change_in_cash
+  # Internal merge metadata — excluded from financial data checks
+  meta_fields:
+    - year
+    - source_document
+    - source_documents
+    - doc_type
+    - doc_priority
+  # Ratio analysis data fields (for the Ratio Analysis Agent)
+  ratio_analysis:
+    - total_revenue_from_operations
+    - total_revenue
+    - net_operating_income
+    - operating_expense
+    - other_operating_expense
+    - employee_benefit_expense
+    - ebitda
+    - profit_before_tax
+    - current_tax
+    - deferred_tax
+    - net_income
+    - depreciation_amortization
+    - finance_cost
+    - interest_payment
+    - principal_repayment
+    - total_debt_service
+    - fixed_payment_obligation
+    - opening_debt
+    - closing_debt
+    - current_assets
+    - current_liabilities
+    - shareholder_equity
+    - share_capital
+    - reserves_surplus
+  # Schema section names (used for set-based lookups)
+  all_financial_sections:
+    - balance_sheets
+    - income_statements
+    - cash_flows
+    - ratio_analysis_data
+
+# ── Financial Field Synonyms ──────────────────────────────────
+# Maps canonical field names → list of synonyms found in real
+# Indian financial documents. Matching is case-insensitive, partial.
+financial_field_synonyms:
+  revenue_from_operations:
+    - "revenue from operations"
+    - "net sales"
+    - "net revenue"
+    - "sales"
+    - "turnover"
+    - "net turnover"
+    - "total revenue"
+    - "income from operations"
+    - "revenue from operation"
+    - "gross revenue from operations"
+  other_income:
+    - "other income"
+    - "other operating income"
+    - "non operating income"
+    - "miscellaneous income"
+    - "other receipts"
+    - "interest income"
+    - "dividend income"
+  cost_of_material:
+    - "cost of material"
+    - "cost of materials consumed"
+    - "raw material consumed"
+    - "material consumed"
+    - "cost of goods sold"
+    - "cogs"
+    - "cost of revenue"
+    - "purchases of stock in trade"
+    - "direct material cost"
+    - "cost of production"
+  employee_benefit_expense:
+    - "employee benefit expense"
+    - "employee benefits expense"
+    - "staff cost"
+    - "staff costs"
+    - "salaries and wages"
+    - "personnel expenses"
+    - "payroll cost"
+    - "manpower cost"
+    - "human resource cost"
+    - "remuneration"
+    - "employee cost"
+  finance_cost:
+    - "finance cost"
+    - "finance costs"
+    - "financial costs"
+    - "interest expense"
+    - "interest cost"
+    - "borrowing costs"
+    - "financial charges"
+    - "interest on borrowings"
+    - "interest and finance charges"
+    - "bank charges"
+    - "interest paid"
+  depreciation:
+    - "depreciation"
+    - "amortisation"
+    - "amortization"
+    - "depreciation and amortisation"
+    - "depreciation & amortisation"
+    - "depreciation amortisation impairment"
+    - "d&a"
+    - "dda"
+  share_capital:
+    - "share capital"
+    - "equity share capital"
+    - "paid up capital"
+    - "paid-up capital"
+    - "authorised capital"
+    - "issued capital"
+    - "capital stock"
+  reserves_surplus:
+    - "reserves and surplus"
+    - "reserves & surplus"
+    - "reserves"
+    - "retained earnings"
+    - "surplus"
+    - "other equity"
+    - "equity excluding share capital"
+    - "general reserve"
+    - "retained profit"
+  long_term_borrowing:
+    - "long term borrowing"
+    - "long-term borrowing"
+    - "long term borrowings"
+    - "long-term borrowings"
+    - "non current liabilities"
+    - "non-current liabilities"
+    - "term loans"
+    - "secured loans"
+    - "unsecured loans"
+    - "long term debt"
+    - "ncd"
+    - "debentures"
+  short_term_borrowing:
+    - "short term borrowing"
+    - "short-term borrowing"
+    - "short term borrowings"
+    - "working capital loan"
+    - "cash credit"
+    - "overdraft"
+    - "od limit"
+    - "short term debt"
+    - "current portion of long term debt"
+    - "bank overdraft"
+  trade_payables:
+    - "trade payables"
+    - "trade payable"
+    - "creditors"
+    - "accounts payable"
+    - "sundry creditors"
+    - "trade creditors"
+    - "payables"
+    - "amount due to creditors"
+  fixed_assets:
+    - "fixed assets"
+    - "net block"
+    - "property plant equipment"
+    - "ppe"
+    - "tangible assets"
+    - "intangible assets"
+    - "non current assets"
+    - "capital work in progress"
+    - "cwip"
+    - "gross block"
+  operating_activities:
+    - "cash from operating activities"
+    - "net cash from operating activities"
+    - "cash flows from operating activities"
+    - "cash generated from operations"
+    - "operating activities"
+    - "net cash used in operating activities"
+  investing_activities:
+    - "cash from investing activities"
+    - "net cash from investing activities"
+    - "cash flows from investing activities"
+    - "investing activities"
+    - "net cash used in investing activities"
+  financing_activities:
+    - "cash from financing activities"
+    - "net cash from financing activities"
+    - "cash flows from financing activities"
+    - "financing activities"
+    - "net cash used in financing activities"
+  net_change_in_cash:
+    - "net change in cash"
+    - "net increase in cash"
+    - "net decrease in cash"
+    - "net cash flow"
+    - "increase decrease in cash"
+    - "net change in cash and cash equivalents"
+    - "closing cash balance"
+
+# ── Cleaning Field Map (Node 4 → Node 5 field names) ─────────
+# Translates Node 4 canonical field keys into Node 5 figure array names.
+cleaning_field_map:
+  revenue_from_operations:  "net_sales_figures"
+  other_income:             "other_income_figures"
+  cost_of_material:         "material_cost_figures"
+  employee_benefit_expense: "employee_cost_figures"
+  finance_cost:             "finance_cost_figures"
+  depreciation:             "depreciation_figures"
+  share_capital:            "share_capital_figures"
+  reserves_surplus:         "reserves_figures"
+  long_term_borrowing:      "lt_borrowing_figures"
+  short_term_borrowing:     "st_borrowing_figures"
+  trade_payables:           "trade_payables_figures"
+  fixed_assets:             "fixed_assets_figures"
+  operating_activities:     "operating_cf_figures"
+  investing_activities:     "investing_cf_figures"
+  financing_activities:     "financing_cf_figures"
+  net_change_in_cash:       "net_cash_figures"
+
+# ── Cleaning Field Priority (ordered) ────────────────────────
+# When multiple Node 4 fields map to the same target, earlier = higher priority.
+cleaning_field_priority:
+  - revenue_from_operations
+  - other_income
+  - cost_of_material
+  - employee_benefit_expense
+  - finance_cost
+  - depreciation
+  - share_capital
+  - reserves_surplus
+  - long_term_borrowing
+  - short_term_borrowing
+  - trade_payables
+  - fixed_assets
+  - operating_activities
+  - investing_activities
+  - financing_activities
+  - net_change_in_cash
+
+# ── Figure Array Names ────────────────────────────────────────
+# Used by _run_deduplication (data_cleaning) and _build_known_values (data_structuring).
+cleaning_figure_arrays:
+  # ── Existing arrays (income statement / balance sheet / cash flow) ──
+  - net_sales_figures
+  - other_income_figures
+  - material_cost_figures
+  - employee_cost_figures
+  - finance_cost_figures
+  - depreciation_figures
+  - share_capital_figures
+  - reserves_figures
+  - lt_borrowing_figures
+  - st_borrowing_figures
+  - trade_payables_figures
+  - fixed_assets_figures
+  - operating_cf_figures
+  - investing_cf_figures
+  - financing_cf_figures
+  - net_cash_figures
+  # ── New arrays for ratio analysis data ───────────────────────
+  - total_revenue_figures
+  - net_operating_income_figures
+  - operating_expense_figures
+  - other_operating_expense_figures
+  - ebitda_figures
+  - profit_before_tax_figures
+  - current_tax_figures
+  - deferred_tax_figures
+  - net_income_figures
+  - interest_payment_figures
+  - principal_repayment_figures
+  - total_debt_service_figures
+  - fixed_payment_obligation_figures
+  - opening_debt_figures
+  - closing_debt_figures
+  - current_assets_figures
+  - current_liabilities_figures
+  - shareholder_equity_figures
+
+# ── Cash Flow Anchor Patterns ─────────────────────────────────
+# Keywords marking the start of a cash flow section in raw text.
+# Ordered most-specific → least-specific; first match wins.
+# Includes both plain-text (PyMuPDF/Tika) and markdown (MinerU) variants.
+cash_flow_anchor_patterns:
+  - "cash flow statement"
+  - "statement of cash flows"
+  - "statement of cash flow"
+  - "cash flows from operating activities"
+  - "cash flows from operating"
+  - "cash flow from operating"
+  - "cash flow from operations"
+  - "cash generated from operations"
+  - "a. cash flow"
+  - "a) cash flow"
+  - "(a) operating activities"
+  - "net cash from operating"
+  - "net cash used in operating"
+  - "## cash flow"
+  - "# cash flow"
+  - "## statement of cash"
+  - "**cash flow"
+
+# ── Table Type Signatures ─────────────────────────────────────
+# Maps table type label → anchor keyword list.
+# A table is classified as a type when >= table_type_min_hits keywords match.
+# Ordered most-specific → least-specific.
+table_type_signatures:
+  "Cash Flow Statement":
+    - "operating activities"
+    - "investing activities"
+    - "financing activities"
+    - "net change in cash"
+    - "cash generated"
+    - "cash flow"
+    - "net cash"
+    - "cash flow from operating"
+    - "cash flow from investing"
+    - "cash flow from financing"
+    - "cash used in"
+    - "net increase in cash"
+    - "net decrease in cash"
+    - "cash and cash equivalents"
+    - "closing cash"
+  "Balance Sheet":
+    - "share capital"
+    - "reserves and surplus"
+    - "reserves"
+    - "long term borrowing"
+    - "short term borrowing"
+    - "trade payables"
+    - "fixed assets"
+    - "net block"
+    - "capital and liabilities"
+  "Income Statement":
+    - "revenue from operations"
+    - "net sales"
+    - "turnover"
+    - "cost of material"
+    - "employee benefit"
+    - "finance cost"
+    - "depreciation"
+    - "other income"
+    - "profit before tax"
+  "Bank Statement":
+    - "debit"
+    - "credit"
+    - "closing balance"
+    - "opening balance"
+    - "transaction date"
+    - "cheque"
+    - "neft"
+    - "rtgs"
+    - "ifsc"
+    - "withdrawal"
+    - "deposit"
+    - "account number"
+  "GST Return":
+    - "gstin"
+    - "igst"
+    - "cgst"
+    - "sgst"
+    - "hsn"
+    - "sac"
+    - "outward supplies"
+    - "inward supplies"
+    - "taxable value"
+    - "integrated tax"
+    - "central tax"
+    - "state tax"
+  "Tax Summary":
+    - "assessment year"
+    - "total income"
+    - "gross total income"
+    - "tax liability"
+    - "advance tax"
+    - "tds"
+    - "refund"
+    - "income from business"
+    - "income from salary"
+
+# ── Null / Missing Value Strings ─────────────────────────────
+# Raw cell values treated as missing/null during numeric parsing.
+null_value_strings:
+  - ""
+  - "-"
+  - "N/A"
+  - "n/a"
+  - "NA"
+  - "nil"
+  - "Nil"
+  - "--"
+
+# ── Document Types ────────────────────────────────────────────
+document_types:
+
+  # All recognized document type labels
+  valid_labels:
+    - "Financial Statement"
+    - "Balance Sheet"
+    - "Income Statement"
+    - "Cash Flow Statement"
+    - "Bank Statement"
+    - "GST Return"
+    - "Income Tax Return"
+    - "ROC Filing"
+    - "Annual Report"
+    - "Unknown"
+    - "Board Resolution"
+    - "Certificate of Incorporation"
+    - "Loan Document"
+    - "Company Profile"
+    - "Credit Report"
+
+  # File extensions that strongly imply a doc type without reading content
+  extension_hints:
+    ".xlsx": "Financial Statement"
+    ".xls": "Financial Statement"
+
+  # Doc types that must NEVER contribute financial rows to any tab.
+  non_financial:
+    - "Loan Document"
+    - "Company Profile"
+    - "Board Resolution"
+    - "Certificate of Incorporation"
+    - "Credit Report"
+    - "Bank Statement"
+    - "GST Return"
+    - "ROC Filing"
+
+  # Priority for conflict resolution when multiple docs have same-year data.
+  # Lower number = higher authority.
+  priorities:
+    "Balance Sheet":              1
+    "Income Statement":           1
+    "Cash Flow Statement":        1
+    "Financial Statement":        2
+    "Annual Report":              3
+    "Bank Statement":             4
+    "GST Return":                 4
+    "Income Tax Return":          4
+    "ROC Filing":                 5
+    "Loan Document":              6
+    "Company Profile":            6
+    "Board Resolution":           6
+    "Certificate of Incorporation": 6
+    "Credit Report":              6
+    "Unknown":                    7
+
+  # Weights for company name consensus voting (higher = more trusted)
+  reliable_company_name_types:
+    "Balance Sheet":              3
+    "Income Statement":           3
+    "Cash Flow Statement":        3
+    "Financial Statement":        3
+    "Income Tax Return":          3
+    "GST Return":                 2
+    "ROC Filing":                 2
+    "Certificate of Incorporation": 2
+    "Bank Statement":             2
+    "Credit Report":              2
+    "Loan Document":              1
+    "Annual Report":              1
+    "Company Profile":            1
+    "Board Resolution":           1
+    "Unknown":                    1
+
+  # Which schema sections each doc type is allowed to fill.
+  # Empty list = identifiers only, no financial rows.
+  # ratio_analysis_data is allowed for all financial statement types because
+  # its fields span Balance Sheet (current assets/liabilities), Income
+  # Statement (PBT, net income, EBITDA) and Cash Flow (principal repayment).
+  allowed_sections:
+    "Balance Sheet":              ["balance_sheets", "ratio_analysis_data"]
+    "Income Statement":           ["income_statements", "ratio_analysis_data"]
+    "Cash Flow Statement":        ["cash_flows", "ratio_analysis_data"]
+    "Financial Statement":        ["balance_sheets", "income_statements", "cash_flows", "ratio_analysis_data"]
+    "Annual Report":              ["balance_sheets", "income_statements", "cash_flows", "ratio_analysis_data"]
+    "Bank Statement":             []
+    "GST Return":                 []
+    "Income Tax Return":          []
+    "ROC Filing":                 []
+    "Loan Document":              []
+    "Company Profile":            []
+    "Board Resolution":           []
+    "Certificate of Incorporation": []
+    "Credit Report":              []
+    "Unknown":                    ["balance_sheets", "income_statements", "cash_flows", "ratio_analysis_data"]
+
+# ── Document Text Keywords ────────────────────────────────────
+# High-signal keywords for each document type.
+# Used by document_identification.py Stage 2 (keyword scoring).
+text_keywords:
+  "Bank Statement":
+    - "account number"
+    - "account no"
+    - "debit"
+    - "credit"
+    - "closing balance"
+    - "opening balance"
+    - "transaction date"
+    - "ifsc"
+    - "neft"
+    - "rtgs"
+    - "cheque"
+    - "withdrawal"
+    - "deposit"
+  "GST Return":
+    - "gstin"
+    - "igst"
+    - "cgst"
+    - "sgst"
+    - "hsn"
+    - "sac"
+    - "outward supplies"
+    - "inward supplies"
+    - "gstr"
+    - "taxable value"
+  "Income Tax Return":
+    - "assessment year"
+    - "pan"
+    - "total income"
+    - "gross total income"
+    - "tax liability"
+    - "advance tax"
+    - "itr"
+    - "schedule"
+    - "income from business"
+  "Balance Sheet":
+    - "total assets"
+    - "total liabilities"
+    - "shareholders equity"
+    - "fixed assets"
+    - "current assets"
+    - "current liabilities"
+    - "long term debt"
+    - "retained earnings"
+    - "capital"
+  "Income Statement":
+    - "revenue"
+    - "turnover"
+    - "gross profit"
+    - "ebitda"
+    - "ebit"
+    - "net profit"
+    - "pat"
+    - "profit after tax"
+    - "operating expenses"
+    - "depreciation"
+    - "interest expense"
+  "Cash Flow Statement":
+    - "operating activities"
+    - "investing activities"
+    - "financing activities"
+    - "net cash"
+    - "cash equivalents"
+    - "capital expenditure"
+    - "proceeds from"
+  "ROC Filing":
+    - "registrar of companies"
+    - "mca"
+    - "cin"
+    - "authorized capital"
+    - "paid up capital"
+    - "form mgt"
+    - "annual return"
+    - "director identification"
+    - "din"
+  "Annual Report":
+    - "board of directors"
+    - "chairman"
+    - "managing director"
+    - "independent auditor"
+    - "annual report"
+    - "shareholders"
+    - "notice of agm"
+    - "dividend"
+  "Credit Report":
+    - "cibil"
+    - "credit score"
+    - "credit rating"
+    - "repayment history"
+    - "outstanding loan"
+    - "dpd"
+    - "days past due"
+  "Board Resolution":
+    - "board of directors"
+    - "resolved that"
+    - "borrowing powers"
+    - "authorized to borrow"
+    - "common seal"
+  "Certificate of Incorporation":
+    - "certificate of incorporation"
+    - "registrar of companies"
+    - "company act"
+    - "incorporated"
+    - "corporate identity"
+
+# ── Filename Keyword Map ──────────────────────────────────────
+# Matched against lowercased filename (without extension).
+# More specific patterns first — order matters.
+filename_keyword_map:
+  - keywords: ["gst_return", "gstr", "gst-return"]
+    label: "GST Return"
+  - keywords: ["itr", "income_tax", "income-tax", "it_return"]
+    label: "Income Tax Return"
+  - keywords: ["roc_filing", "roc-filing", "mca_filing"]
+    label: "ROC Filing"
+  - keywords: ["bank_statement", "bank-statement", "bank_stmt"]
+    label: "Bank Statement"
+  - keywords: ["balance_sheet", "balance-sheet"]
+    label: "Balance Sheet"
+  - keywords: ["profit_loss", "p&l", "income_statement"]
+    label: "Income Statement"
+  - keywords: ["cash_flow", "cashflow"]
+    label: "Cash Flow Statement"
+  - keywords: ["annual_report", "annual-report"]
+    label: "Annual Report"
+  - keywords: ["board_resolution", "board-resolution"]
+    label: "Board Resolution"
+  - keywords: ["certificate_of_incorporation", "incorporation"]
+    label: "Certificate of Incorporation"
+  - keywords: ["loan_sanction", "sanction_letter"]
+    label: "Loan Document"
+  - keywords: ["company_overview", "company_profile"]
+    label: "Company Profile"
+  - keywords: ["cibil", "credit_report"]
+    label: "Credit Report"
+
+# ── Keyword Threshold ─────────────────────────────────────────
+# Minimum keyword hits to trust keyword classification without LLM.
+keyword_threshold: 2
+
+# ── Node 1 Category → Valid Labels ───────────────────────────
+# When Node 1 pre-classified into a broad CAMS category,
+# Stage 2 scoring is narrowed to only these labels.
+category_to_labels:
+  "Financial Statement":
+    - "Balance Sheet"
+    - "Income Statement"
+    - "Cash Flow Statement"
+    - "Financial Statement"
+    - "Annual Report"
+  "Bank Statement":
+    - "Bank Statement"
+  "GST Return":
+    - "GST Return"
+  "Income Tax Return":
+    - "Income Tax Return"
+  "ROC Filing":
+    - "ROC Filing"
+    - "Certificate of Incorporation"
+    - "Board Resolution"
+
+# ── Category Rules ────────────────────────────────────────────
+# Used by document_intake.py (Node 1) to pre-classify documents by filename.
+# Structure: label = broad CAMS category; subtypes = ordered list of
+# {keywords, doc_type} — first match wins (most specific first).
+# Keywords matched against normalized filename (lowercase, no extension,
+# special chars → spaces).
+category_rules:
+
+  - label: "Financial Statement"
+    subtypes:
+      - keywords: ["balance sheet", "balance_sheet", "balancesheet",
+                   "bs 20", "audited balance", "b sheet", "bsheet"]
+        doc_type: "Balance Sheet"
+      - keywords: ["cash flow", "cashflow", "cash_flow",
+                   "statement of cash", "scfs", "cfs statement"]
+        doc_type: "Cash Flow Statement"
+      - keywords: ["profit loss", "profit and loss", "p and l", "p&l",
+                   "pnl", "income statement", "income_statement",
+                   "statement of income", "profit & loss",
+                   "trading account", "trading p l"]
+        doc_type: "Income Statement"
+      - keywords: ["financial statement", "financial_statement",
+                   "financials", "audited accounts", "annual accounts",
+                   "standalone financial", "consolidated financial",
+                   "audited fs", "annual report", "directors report"]
+        doc_type: "Financial Statement"
+
+  - label: "Bank Statement"
+    subtypes:
+      - keywords: ["credit card statement", "cc statement", "cc_statement",
+                   "card statement", "credit card"]
+        doc_type: "Credit Card Statement"
+      - keywords: ["od statement", "overdraft statement",
+                   "cash credit statement", "cc account statement",
+                   "od account", "overdraft account"]
+        doc_type: "Overdraft / CC Account Statement"
+      - keywords: ["hdfc bank statement", "sbi bank statement",
+                   "icici bank statement", "axis bank statement",
+                   "kotak bank statement", "pnb bank statement",
+                   "yes bank statement", "indusind statement",
+                   "canara statement", "union bank statement",
+                   "bank of baroda statement", "bob statement",
+                   "idfc statement", "federal bank statement",
+                   "rbl statement", "bandhan bank statement"]
+        doc_type: "Bank Statement"
+      - keywords: ["bank statement", "bank_statement", "bankstatement",
+                   "account statement", "account_statement",
+                   "savings account", "current account",
+                   "bank passbook", "passbook", "bank_stmt",
+                   "statement of account", "bank acct"]
+        doc_type: "Bank Statement"
+
+  - label: "GST Return"
+    subtypes:
+      - keywords: ["gstr 9c", "gstr9c", "gstr-9c"]
+        doc_type: "GSTR-9C (GST Audit)"
+      - keywords: ["gstr 9", "gstr9", "gstr-9",
+                   "gst annual return", "annual gst return"]
+        doc_type: "GSTR-9 (Annual Return)"
+      - keywords: ["gstr 1", "gstr1", "gstr-1", "outward supply"]
+        doc_type: "GSTR-1 (Outward Supplies)"
+      - keywords: ["gstr 3b", "gstr3b", "gstr-3b",
+                   "monthly return", "gst monthly"]
+        doc_type: "GSTR-3B (Monthly Return)"
+      - keywords: ["gstr 2a", "gstr2a", "gstr-2a"]
+        doc_type: "GSTR-2A (Auto-drafted Inward Supplies)"
+      - keywords: ["gstr 2b", "gstr2b", "gstr-2b"]
+        doc_type: "GSTR-2B (Auto-drafted ITC Statement)"
+      - keywords: ["gst return", "gst_return", "gst filing",
+                   "gstin certificate", "goods and service tax",
+                   "goods service tax", "gstr", "gst"]
+        doc_type: "GST Return"
+
+  - label: "Income Tax Return"
+    subtypes:
+      - keywords: ["26as", "form 26as", "form26as",
+                   "annual information statement", "ais report",
+                   "tax credit statement"]
+        doc_type: "Form 26AS / AIS"
+      - keywords: ["form 16", "form16", "tds certificate",
+                   "tds cert", "salary tds", "salary certificate"]
+        doc_type: "Form 16 (TDS Certificate)"
+      - keywords: ["itr 1", "itr1", "itr-1", "sahaj"]
+        doc_type: "ITR-1 (Sahaj)"
+      - keywords: ["itr 2", "itr2", "itr-2"]
+        doc_type: "ITR-2"
+      - keywords: ["itr 3", "itr3", "itr-3"]
+        doc_type: "ITR-3"
+      - keywords: ["itr 4", "itr4", "itr-4", "sugam"]
+        doc_type: "ITR-4 (Sugam)"
+      - keywords: ["itr 5", "itr5", "itr-5"]
+        doc_type: "ITR-5"
+      - keywords: ["itr 6", "itr6", "itr-6"]
+        doc_type: "ITR-6"
+      - keywords: ["itr 7", "itr7", "itr-7"]
+        doc_type: "ITR-7"
+      - keywords: ["income tax return", "income_tax_return",
+                   "it return", "itr filing", "tax return",
+                   "itr acknowledgement", "itr receipt",
+                   "income tax", "itr"]
+        doc_type: "Income Tax Return"
+
+  - label: "ROC Filing"
+    subtypes:
+      - keywords: ["mgt 7", "mgt7", "mgt-7", "annual return mca"]
+        doc_type: "MGT-7 (Annual Return)"
+      - keywords: ["aoc 4", "aoc4", "aoc-4", "financial statement filing"]
+        doc_type: "AOC-4 (Financial Statements Filing)"
+      - keywords: ["dir 12", "dir12", "dir-12",
+                   "director appointment", "director change"]
+        doc_type: "DIR-12 (Director Change)"
+      - keywords: ["inc 22", "inc22", "inc-22", "registered office"]
+        doc_type: "INC-22 (Registered Office)"
+      - keywords: ["mgt 14", "mgt14", "mgt-14",
+                   "special resolution", "ordinary resolution"]
+        doc_type: "MGT-14 (Resolution Filing)"
+      - keywords: ["certificate of incorporation",
+                   "incorporation certificate", "coi",
+                   "company incorporation"]
+        doc_type: "Certificate of Incorporation"
+      - keywords: ["memorandum of association", "moa",
+                   "articles of association", "aoa", "moa aoa"]
+        doc_type: "MOA / AOA"
+      - keywords: ["roc filing", "roc_filing", "mca filing",
+                   "mca form", "company registration",
+                   "registrar of companies", "roc", "mca"]
+        doc_type: "ROC Filing"
+
+# ── Company Name Filtering ────────────────────────────────────
+company_name:
+  # Placeholder / LLM-artefact values treated as "no company name".
+  # Used in both consensus voting and mismatch filtering.
+  invalid_names:
+    - "company"
+    - "company name"
+    - "null"
+    - "none"
+    - ""
+    - "n/a"
+    - "borrower"
+    - "the company"
+    - "name of company"
+    # LLM prompt artefacts — model echoed the type hint literally
+    - "string or null"
+    - "string"
+    - "string or none"
+    - "integer or null"
+    - "number or null"
+    # Generic / template placeholder names
+    - "abc corporation"
+    - "abc corp"
+    - "abc company"
+    - "abc ltd"
+    - "abc limited"
+    - "example company"
+    - "sample company"
+    - "test company"
+    - "your company"
+    - "your company name"
+    - "company name here"
+    - "enter company name"
+    - "xyz corporation"
+    - "xyz company"
+    - "xyz ltd"
+    - "na"
+    - "not available"
+    - "not applicable"
+    - "unknown"
+
+  # Common words in company names that are NOT distinctive for matching.
+  stop_words:
+    - "ltd"
+    - "limited"
+    - "pvt"
+    - "private"
+    - "inc"
+    - "incorporated"
+    - "corp"
+    - "corporation"
+    - "co"
+    - "company"
+    - "the"
+    - "and"
+    - "of"
+    - "for"
+    - "a"
+    - "an"
+    - "technologies"
+    - "technology"
+    - "services"
+    - "solutions"
+    - "group"
+    - "india"
+    - "global"
+    - "international"
+    - "enterprises"
+    - "holdings"
