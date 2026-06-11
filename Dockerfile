@@ -3,10 +3,9 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
  
-# ---------- Build-time Arguments ----------
-ARG PROJECT_NAME
-ARG PROJECT_PORT
-ARG ROOT_PATH
+ARG PROJECT_NAME=.
+ARG PROJECT_PORT=8000
+ARG ROOT_PATH=/cams
 ARG NEED_FFMPEG=false
 ARG NEED_OCR=false
 ARG NEED_AI_LIBS=false
