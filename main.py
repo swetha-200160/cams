@@ -147,7 +147,7 @@ def root():
     return {
         "service": settings.title,
         "version": settings.version,
-        "mode": "backend-only",
+        "mode": "backend -updated-from-local",
         "docs": "/docs",
         "openapi": "/openapi.json",
     }
