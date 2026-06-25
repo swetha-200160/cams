@@ -113,6 +113,7 @@ app = FastAPI(
     openapi_tags=_TAGS,
     docs_url="/docs",
     redoc_url="/redoc",
+    root_path="/cams"
 )
 
 app.add_middleware(
